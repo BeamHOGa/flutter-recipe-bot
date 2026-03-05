@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'config.dart';
 
 class MyHomePage extends StatefulWidget {
   final String title;
@@ -12,14 +14,25 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late final GenerativeModel _model;
+  bool _isLoading = false;
 
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       text:
-          'สวัสดีครับ 👩‍🍳 ผมคือผู้ช่วยสูตรอาหาร\nถามได้เลย เช่น “ขอสูตรผัดกะเพราไก่” หรือ “มีเมนูไข่ง่าย ๆ ไหม”',
+          'สวัสดีครับ 👩‍🍳 ผมคือผู้ช่วยสูตรอาหาร AI\nถามได้เลย เช่น "ขอสูตรผัดกะเพราไก่" หรือ "วิธีทำไข่เจียวง่าย ๆ"',
       isUser: false,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _model = GenerativeModel(
+      model: 'gemini-pro',
+      apiKey: Config.geminiApiKey,
+    );
+  }
 
   @override
   void dispose() {
@@ -28,15 +41,42 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isLoading) return;
 
     setState(() {
       _messages.add(_ChatMessage(text: text, isUser: true));
-      _messages.add(_ChatMessage(text: _generateRecipeReply(text), isUser: false));
       _textController.clear();
+      _isLoading = true;
     });
+
+    try {
+      final response = await _model.generateContent([
+        Content.text(
+          'You are a helpful Thai cooking assistant. '
+          'Answer questions about Thai recipes in Thai language. '
+          'Provide ingredient lists and step-by-step instructions. '
+          'Keep answers concise and friendly. '
+          'User question: $text',
+        ),
+      ]);
+
+      final reply = response.text ?? 'ขออภัยครับ ไม่สามารถตอบคำถามได้';
+
+      setState(() {
+        _messages.add(_ChatMessage(text: reply, isUser: false));
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add(_ChatMessage(
+          text: 'ขออภัยครับ เกิดข้อผิดพลาด: ${e.toString()}',
+          isUser: false,
+        ));
+        _isLoading = false;
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -47,47 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }
     });
-  }
-
-  String _generateRecipeReply(String prompt) {
-    final lower = prompt.toLowerCase();
-
-    if (lower.contains('กะเพรา')) {
-      return 'สูตรผัดกะเพราไก่ (1-2 ที่)\n\n'
-          'วัตถุดิบ\n- อกไก่สับ 200 กรัม\n- กระเทียม 5 กลีบ + พริก 5 เม็ด\n- ใบกะเพรา 1 ถ้วย\n- น้ำปลา 1 ช้อนโต๊ะ\n- ซีอิ๊วดำ 1/2 ช้อนชา\n- น้ำตาล 1/2 ช้อนชา\n\n'
-          'วิธีทำ\n1) โขลกกระเทียมพริกแล้วผัดกับน้ำมัน\n2) ใส่ไก่ ผัดจนสุก\n3) ปรุงรสด้วยน้ำปลา ซีอิ๊วดำ น้ำตาล\n4) ใส่ใบกะเพรา ปิดไฟทันที\n\n'
-          'เสิร์ฟกับข้าวสวยและไข่ดาวจะอร่อยมากครับ 🍳';
-    }
-
-    if (lower.contains('ไข่')) {
-      return 'เมนูไข่ง่าย ๆ: ไข่เจียวฟู\n\n'
-          'วัตถุดิบ\n- ไข่ 2 ฟอง\n- น้ำปลา 1 ช้อนชา\n- น้ำมะนาว 2-3 หยด\n\n'
-          'วิธีทำ\n1) ตีไข่ให้ขึ้นฟองเยอะ ๆ\n2) ใส่น้ำปลาและน้ำมะนาว\n3) ใช้น้ำมันร้อนจัด แล้วเทไข่ลงทอด\n4) กลับด้านสั้น ๆ แล้วตักขึ้น\n\n'
-          'ทานกับซอสพริกหรือข้าวร้อน ๆ ได้เลยครับ 😋';
-    }
-
-    if (lower.contains('ต้มยำ')) {
-      return 'สูตรต้มยำกุ้งน้ำใส\n\n'
-          'วัตถุดิบ\n- กุ้งสด 200 กรัม\n- ข่า ตะไคร้ ใบมะกรูด\n- เห็ดฟาง 100 กรัม\n- น้ำปลา 2 ช้อนโต๊ะ\n- น้ำมะนาว 2 ช้อนโต๊ะ\n- พริกบุบตามชอบ\n\n'
-          'วิธีทำ\n1) ต้มน้ำให้เดือด ใส่สมุนไพร\n2) ใส่เห็ดและกุ้ง\n3) ปรุงด้วยน้ำปลา\n4) ปิดไฟแล้วค่อยใส่น้ำมะนาว\n\n'
-          'เคล็ดลับ: ใส่น้ำมะนาวหลังปิดไฟ กลิ่นจะหอมสดชื่นครับ';
-    }
-
-    if (lower.contains('เมนู') || lower.contains('แนะนำ')) {
-      return 'ลองเลือกจากเมนูยอดนิยมนี้ได้เลยครับ\n'
-          '- ผัดกะเพราไก่\n'
-          '- ข้าวผัดกุ้ง\n'
-          '- ต้มยำกุ้งน้ำใส\n'
-          '- ไข่เจียวหมูสับ\n\n'
-          'พิมพ์ชื่อเมนูที่อยากได้ แล้วผมจะส่งสูตรให้ทันที 👨‍🍳';
-    }
-
-    return 'ผมช่วยเรื่องสูตรอาหารได้ครับ 🍲\n'
-        'ลองถามแบบนี้ได้:\n'
-        '- ขอสูตรผัดกะเพราไก่\n'
-        '- มีเมนูไข่ง่าย ๆ ไหม\n'
-        '- ขอสูตรต้มยำกุ้ง\n\n'
-        'ถ้ามีวัตถุดิบที่บ้านอยู่แล้ว บอกผมได้ เดี๋ยวช่วยคิดเมนูให้ครับ';
   }
 
   @override
@@ -109,6 +108,25 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
+          if (_isLoading)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Gemini กำลังคิด...',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
           SafeArea(
             top: false,
             minimum: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -117,6 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(
                   child: TextField(
                     controller: _textController,
+                    enabled: !_isLoading,
                     decoration: const InputDecoration(
                       hintText: 'พิมพ์คำถามเกี่ยวกับสูตรอาหาร...',
                       border: OutlineInputBorder(),
@@ -126,7 +145,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
-                  onPressed: _sendMessage,
+                  onPressed: _isLoading ? null : _sendMessage,
                   icon: const Icon(Icons.send),
                 ),
               ],

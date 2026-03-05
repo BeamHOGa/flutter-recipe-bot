@@ -15,22 +15,22 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('แชทบอทสูตรอาหาร'), findsOneWidget);
-    expect(find.textContaining('ผู้ช่วยสูตรอาหาร'), findsOneWidget);
+    expect(find.textContaining('ผู้ช่วยสูตรอาหาร AI'), findsOneWidget);
     expect(find.text('พิมพ์คำถามเกี่ยวกับสูตรอาหาร...'), findsOneWidget);
   });
 
-  testWidgets('Recipe chatbot replies when sending a message',
+  testWidgets('Recipe chatbot shows loading indicator when sending message',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     await tester.enterText(
-      find.byType(EditableText),
+      find.byType(EditableText).first,
       'ขอสูตรผัดกะเพราไก่',
     );
     await tester.tap(find.byIcon(Icons.send));
     await tester.pump();
 
     expect(find.text('ขอสูตรผัดกะเพราไก่'), findsOneWidget);
-    expect(find.textContaining('วัตถุดิบ'), findsOneWidget);
+    expect(find.text('Gemini กำลังคิด...'), findsOneWidget);
   });
 }
