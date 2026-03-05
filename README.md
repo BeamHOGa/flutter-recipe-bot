@@ -1,16 +1,54 @@
-# flutter_application_1
+# flutter-recipe-bot
 
-A new Flutter project.
+🍳 Recipe Chatbot Flutter App
+
+A Flutter application that acts as a chatbot for cooking recipes. Users can ask questions about recipes and get responses with ingredients and instructions.
+
+## Features
+
+- 💬 Interactive chat interface
+- 🍲 Recipe recommendations based on keywords
+- 📱 Material Design UI
+- ✅ Widget tests included
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK 3.10.8 or higher
+- Dart 3.10.8 or higher
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+```
+
+### Running the App
+
+```bash
+flutter run
+```
+
+### Running Tests
+
+```bash
+flutter test
+```
+
+## Project Structure
+
+```
+lib/
+├── main.dart          # App entry point
+└── Home.dart          # Chat UI and recipe logic
+test/
+└── widget_test.dart   # Widget tests
+```
+
+## Development
+
+The app is built with:
+- **Flutter** - UI framework
+- **Dart** - Programming language
+- **Material Design** - UI design system
